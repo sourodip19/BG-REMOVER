@@ -10,20 +10,20 @@ const PORT = process.env.PORT || 4000;
 const app = express();
 
 // app.post(
-  //   "/api/user/webhooks",
-  //   express.raw({ type: "application/json" }),
-  //   clerkWebhooks
-  // );
-  // Middleware
-  app.use(express.json());
-  app.use(cors());
-  await connectDb();
+//   "/api/user/webhooks",
+//   express.raw({ type: "application/json" }),
+//   clerkWebhooks
+// );
+// Middleware
+app.use(express.json());
+app.use(cors());
+await connectDb();
 
 // API route
 app.get("/", (req, res) => {
   res.send("API working");
 });
-api.use("/api/user", userRouter);
+app.use("/api/user", userRouter);
 
 // Server start
 app.listen(PORT, () => {
