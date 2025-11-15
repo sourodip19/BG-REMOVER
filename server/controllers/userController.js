@@ -1,22 +1,19 @@
 import { Webhook } from "svix";
 import userModel from "../models/User.js";
+// Api controller function to manage clerk user with database
+// http://localhost:4000/api/user/webhooks
 
 const clerkWebhooks = async (req, res) => {
-  console.log("Webhook route hit");
   try {
     const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
-    const headers = {
+    await whook.verify(JSON.stringify(req.body), {
       "svix-id": req.headers["svix-id"],
       "svix-timestamp": req.headers["svix-timestamp"],
       "svix-signature": req.headers["svix-signature"],
-    };
+    });
 
-    const body = req.body.toString(); // RAW STRING
-
-    const evt = whook.verify(body, headers);
-    const { data, type } = evt;
-
+    const { data, type } = req.body;
     switch (type) {
       case "user.created": {
         const userData = {
@@ -26,30 +23,31 @@ const clerkWebhooks = async (req, res) => {
           lastName: data.last_name,
           photo: data.image_url,
         };
-
         await userModel.create(userData);
-        return res.json({ success: true });
+        res.json({});
+        break;
       }
 
       case "user.deleted": {
         await userModel.findOneAndDelete({ clerkId: data.id });
-        return res.json({ success: true });
+        res.json({});
+        break;
       }
 
       case "user.updated": {
         const userData = {
-          email: data.email_addresses[0].email_address,
+          clerkId: data.id,
+          email: data.email_address[0].email_address,
           firstName: data.first_name,
           lastName: data.last_name,
           photo: data.image_url,
         };
-
         await userModel.findOneAndUpdate({ clerkId: data.id }, userData);
-        return res.json({ success: true });
+        res.json({});
+        break;
       }
-
       default:
-        return res.json({ success: true });
+        break;
     }
   } catch (error) {
     console.log(error.message);
