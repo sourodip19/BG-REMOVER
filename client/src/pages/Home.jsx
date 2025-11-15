@@ -14,7 +14,6 @@ const Home = () => {
       <BgSlider />
       <Testimonials />
       <Upload />
-      <Footer />
     </div>
   );
 };
