@@ -7,13 +7,14 @@ const clerkWebhooks = async (req, res) => {
   try {
     const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
-    await whook.verify(JSON.stringify(req.body), {
+    // Verify webhook signature using raw body
+    const payload = await whook.verify(req.body, {
       "svix-id": req.headers["svix-id"],
       "svix-timestamp": req.headers["svix-timestamp"],
       "svix-signature": req.headers["svix-signature"],
     });
 
-    const { data, type } = req.body;
+    const { data, type } = payload;
     switch (type) {
       case "user.created": {
         const userData = {
@@ -23,12 +24,9 @@ const clerkWebhooks = async (req, res) => {
           lastName: data.last_name,
           photo: data.image_url,
         };
-        await userModel.findOneAndUpdate({ clerkId: data.id }, userData, {
-          new: true,
-          upsert: false,
-        });
-
-        res.json({});
+        const newUser = await userModel.create(userData);
+        console.log("User created in database:", newUser.email);
+        res.json({ success: true, message: "User created" });
         break;
       }
 
@@ -54,8 +52,9 @@ const clerkWebhooks = async (req, res) => {
         break;
     }
   } catch (error) {
-    console.log(error.message);
-    res.json({ success: false, message: error.message });
+    console.error("Webhook error:", error.message);
+    console.error("Error stack:", error.stack);
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
